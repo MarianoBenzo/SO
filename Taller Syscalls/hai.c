@@ -22,16 +22,14 @@ int main(int argc, char* argv[]) {
 	child = fork();
 	if (child == -1) { perror("ERROR fork"); return 1; }
 	if (child == 0) {
+		/* S'olo se ejecuta en el Hijo */
 		if (ptrace(PTRACE_TRACEME, 0, NULL, NULL)) {
 			perror("ERROR child ptrace(PTRACE_TRACEME, ...)"); exit(1);
 		}
 		if(repeticiones == 5){
-			/* S'olo se ejecuta en el Hijo */
 			execvp(argv[1], argv+1);
 			/* Si vuelve de exec() hubo un error */
 			perror("ERROR child exec(...)"); exit(1);
-		}else{
-			kill(getpid(), SIGURG);
 		}
 		
 	} else {
@@ -48,7 +46,8 @@ int main(int argc, char* argv[]) {
 				printf("sup!\n");
 				printf("ya va!\n");
 			}else{
-				ptrace(PTRACE_KILL, child, NULL, NULL);	
+				ptrace(PTRACE_KILL, child, NULL, NULL);
+				break;	
 			}
 
 		}
