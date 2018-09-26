@@ -7,27 +7,29 @@
 #include <list>
 #include <string>
 #include <pthread.h>
+#include <map>
 #include "ListaAtomica.hpp"
 #include "test.hpp"
 
 using namespace std;
 
 class ConcurrentHashMap {
-    public:
-        ConcurrentHashMap();
+public:
+    ConcurrentHashMap();
 
-        void addAndInc(string key);
+    void addAndInc(string key);
 
-        list<string> keys();
+    list<string> keys();
 
-        unsigned int value(string key);
+    unsigned int value(string key);
 
-        pair<string, unsigned int> maximum(unsigned int n);
+    pair<string, unsigned int> maximum(unsigned int n);
 
-        friend Test;
+    friend Test;
 
-    private:
-        // Completar
+private:
+    Lista<pair<string, unsigned int>>* tabla[26];
+    int hash_key(string key);
 
 };
 
