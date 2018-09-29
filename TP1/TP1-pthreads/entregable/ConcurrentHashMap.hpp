@@ -31,7 +31,7 @@ public:
 
 	ostream& operator<<(ostream& os);
 
-    sem_t semaforo[26];
+    // sem_t semaforo[26];
 
 
     friend Test;
