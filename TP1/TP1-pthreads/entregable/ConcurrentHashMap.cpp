@@ -26,10 +26,19 @@ ConcurrentHashMap::ConcurrentHashMap() {
     }
 }
 
+ConcurrentHashMap::~ConcurrentHashMap(){
+    for (int i = 0; i < 26; i++){
+        delete tabla[i];
+        sem_destroy(&semaforo[i]);
+    }
+}
+
 void ConcurrentHashMap::addAndInc(string key) {
 
     int index = hash_key(key);
 
+    sem_wait(&semaforo[k]);     // Obtengo acceso exclusivo de la lista a modificar
+    
     if (value(key) == 0) {
         pair<string, unsigned int> p(key, 1);
         tabla[index]->push_front(p);
@@ -39,6 +48,7 @@ void ConcurrentHashMap::addAndInc(string key) {
             t.second++;
         }
     }
+    sem_post(&semaforo[k]);
 }
 
 list<string> ConcurrentHashMap::keys() {
@@ -48,7 +58,7 @@ list<string> ConcurrentHashMap::keys() {
     {
         for (auto it = tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
             auto elto_atomicList = it.Siguiente();
-            l.push_back(elto_atomicList.first);
+            l.push_front(elto_atomicList.first);
         }
     }
 
@@ -59,9 +69,8 @@ unsigned int ConcurrentHashMap::value(string key) {
 
     int index = hash_key(key);
     unsigned int value = 0;
-    Lista<pair<string, unsigned int>> *tablaValue = tabla[index];
 
-    for (auto it = tablaValue->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
+    for (auto it = tabla[k]->CrearIt(); it.HaySiguiente(); it.Avanzar()){
         auto t = it.Siguiente();
         if (t.first == key) {
             value = t.second;
@@ -99,13 +108,15 @@ static ConcurrentHashMap countWordsInFile(string filePath) {
 
     auto map = ConcurrentHashMap();
     string line;
-    ifstream file;
-    file.open(filePath);
-    if (file.is_open()){
-        string word;
-        while (file >> word)
-        {
-            map.addAndInc(word);
+    ifstream file(filePath);
+    if (filePath.is_open()){
+        while(getline(filePath, line)){
+            vector<string> palabras = split(line, ' ');
+            // Me fijo que no esté vacío para asegurarme de que el iterador sea válido
+            if (!palabras.empty()){
+                for (vector<string>::iterator it = palabras.begin(); it != palabras.end(); it++)
+                    map.addAndInc(*it);
+            }
         }
     }else {
         perror("Error al abrir el archivo: ");

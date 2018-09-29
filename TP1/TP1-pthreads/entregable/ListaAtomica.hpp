@@ -29,10 +29,9 @@ public:
     }
 
     void push_front(const T &val) {
-        std::atomic<Nodo *> n;
-        // n.store();
-        //Tengo que ver como setearle el nuevo valor al nodo atomico
-        _head = n.load();
+        Nodo *n = new Nodo(val);
+        n->_next = _head.load();
+        while(!_head.compare_exchange_weak(n->_next, n)){}
     }
 
     T &front() const {
