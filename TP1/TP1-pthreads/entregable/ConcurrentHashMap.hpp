@@ -16,6 +16,7 @@ using namespace std;
 class ConcurrentHashMap {
 public:
     ConcurrentHashMap();
+    ~ConcurrentHashMap();
 
     void addAndInc(string key);
 
@@ -24,6 +25,8 @@ public:
     unsigned int value(string key);
 
     pair<string, unsigned int> maximum(unsigned int n);
+
+    sem_t semaforo[26];
 
     friend Test;
 
