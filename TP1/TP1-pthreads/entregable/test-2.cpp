@@ -28,8 +28,10 @@ int Test::run(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+
     Test test;
     int exitCode = test.run(argc, argv);
     return exitCode;
+    return 0;
 }
 

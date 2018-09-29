@@ -4,6 +4,8 @@
 #include <atomic>
 #include <ctype.h>
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
 #include <list>
 #include <string>
 #include <pthread.h>
@@ -25,6 +27,8 @@ public:
 
     pair<string, unsigned int> maximum(unsigned int n);
 
+	ostream& operator<<(ostream& os);
+
     friend Test;
 
 private:
@@ -32,6 +36,7 @@ private:
     int hash_key(string key);
 
 };
+
 
 static ConcurrentHashMap countWordsInFile(string filePath);
 

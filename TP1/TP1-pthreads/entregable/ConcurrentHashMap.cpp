@@ -42,7 +42,17 @@ void ConcurrentHashMap::addAndInc(string key) {
 }
 
 list<string> ConcurrentHashMap::keys() {
-    // Completar
+    list<string> l;
+
+    for (int i = 0; i < 26; i++)
+    {
+        for (auto it = tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
+            auto elto_atomicList = it.Siguiente();
+            l.push_back(elto_atomicList.first);
+        }
+    }
+
+    return l;
 }
 
 unsigned int ConcurrentHashMap::value(string key) {
@@ -68,6 +78,21 @@ pair<string, unsigned int> ConcurrentHashMap::maximum(unsigned int n) {
 
 int ConcurrentHashMap::hash_key(string key) {
     return key.at(0) - 97;
+}
+
+ostream& ConcurrentHashMap::operator<<(ostream& os) {
+    os<<"Imprimiendo ConcurrentHashMap"<<endl;
+    for (int i = 0; i < 26; i++)
+    {
+        os << "tabla[" << i << "]= ";
+        for (auto it = tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
+            auto elto_atomicList = it.Siguiente();
+            os<< "<" << elto_atomicList.first << ", " << elto_atomicList.second << ">";
+        }
+        os << endl;
+    }
+
+    return os;
 }
 
 static ConcurrentHashMap countWordsInFile(string filePath) {
@@ -104,5 +129,7 @@ static pair<string, unsigned int>  maximumOne(unsigned int readingThreads, unsig
 static pair<string, unsigned int>  maximumTwo(unsigned int readingThreads, unsigned int maxingThreads, list <string> filePaths) {
     // Completar
 }
+
+
 
 #endif

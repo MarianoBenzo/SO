@@ -29,7 +29,10 @@ public:
     }
 
     void push_front(const T &val) {
-        // Completar. Debe ser atómico.
+        std::atomic<Nodo *> n;
+        // n.store();
+        //Tengo que ver como setearle el nuevo valor al nodo atomico
+        _head = n.load();
     }
 
     T &front() const {
