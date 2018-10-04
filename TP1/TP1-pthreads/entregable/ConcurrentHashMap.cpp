@@ -35,8 +35,10 @@ ConcurrentHashMap::~ConcurrentHashMap(){
 }
 
 void ConcurrentHashMap::addAndInc(string key) {
-    // Completar
     int index = hash_key(key);
+    // Obtengo acceso exclusivo de la lista a modificar
+	   sem_wait(&semaforo[index]);
+
     if (value(key) == 0) {
         pair<string, unsigned int> p(key, 1);
         tabla[index]->push_front(p);
@@ -46,33 +48,36 @@ void ConcurrentHashMap::addAndInc(string key) {
             t.second++;
         }
     }
+
+    sem_post(&semaforo[index]);
 }
 
 list<string> ConcurrentHashMap::keys() {
-    list<string> l;
+    list<string> keys;
 
     for (int i = 0; i < 26; i++)
     {
         for (auto it = tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
-            auto elto_atomicList = it.Siguiente();
-            l.push_front(elto_atomicList.first);
+            auto &t = it.Siguiente();
+            keys.push_front(t.first);
         }
     }
 
-    return l;
+    return keys;
 }
 
 unsigned int ConcurrentHashMap::value(string key) {
-    // Completar
     int index = hash_key(key);
     unsigned int value = 0;
     Lista<pair<string, unsigned int>> *tablaValue = tabla[index];
+
     for (auto it = tablaValue->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
         auto t = it.Siguiente();
         if (t.first == key) {
             value = t.second;
         }
     }
+
     return value;
 }
 

@@ -28,11 +28,7 @@ public:
 
     pair<string, unsigned int> maximum(unsigned int n);
 
-
-	ostream& operator<<(ostream& os);
-
-    // sem_t semaforo[26];
-
+    ostream& operator<<(ostream& os);
 
     friend Test;
 
@@ -40,6 +36,11 @@ private:
     Lista<pair<string, unsigned int>>* tabla[26];
     int hash_key(string key);
 
+    sem_t semaforo[26];
+		atomic_bool lock;
+		atomic_int i_max;
+
+		pair<string, unsigned int> max;
 };
 
 
@@ -53,5 +54,8 @@ static pair<string, unsigned int> maximumOne(unsigned int readingThreads, unsign
 
 static pair<string, unsigned int> maximumTwo(unsigned int readingThreads, unsigned int maxingThreads, list <string> filePaths);
 
+struct args_struct{
+	void *c;
+};
 
 #endif
