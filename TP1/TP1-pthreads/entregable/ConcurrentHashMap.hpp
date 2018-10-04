@@ -10,6 +10,7 @@
 #include <string>
 #include <pthread.h>
 #include <map>
+#include <bits/semaphore.h>
 #include "ListaAtomica.hpp"
 #include "test.hpp"
 
@@ -19,6 +20,8 @@ class ConcurrentHashMap {
 public:
     ConcurrentHashMap();
     ~ConcurrentHashMap();
+
+    Lista<pair<string, unsigned int>>* tabla[26];
 
     void addAndInc(string key);
 
@@ -33,14 +36,13 @@ public:
     friend Test;
 
 private:
-    Lista<pair<string, unsigned int>>* tabla[26];
     int hash_key(string key);
 
     sem_t semaforo[26];
-		atomic_bool lock;
-		atomic_int i_max;
+    atomic_bool lock;
+    atomic_int i_max;
 
-		pair<string, unsigned int> max;
+    pair<string, unsigned int> max;
 };
 
 
