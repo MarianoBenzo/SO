@@ -47,14 +47,6 @@ ConcurrentHashMap::ConcurrentHashMap(ConcurrentHashMap&& otro){
     max = otro.max;
 }
 
-void ConcurrentHashMap::operator=(ConcurrentHashMap &map){
-    list <string> keys = map.keys();
-    for (auto it = keys.begin(); it != keys.end(); it++)
-    {
-        addAndInc(*it);
-    }
-}
-
 void ConcurrentHashMap::addAndInc(string key) {
     int index = hash_key(key);
     // Obtengo acceso exclusivo de la lista a modificar
@@ -251,7 +243,7 @@ void* countWordsArbitraryFromArguments(void * args){
         int i = atomic_fetch_add(i_arch, 1); // Atómico, devuelve valor anterior
 
         if (i < files->size()){
-            list<string>::iterator it = files->begin();
+            auto it = files->begin();
             advance(it, i);
             file = *it;
         }else{

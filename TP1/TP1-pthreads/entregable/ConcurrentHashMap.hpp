@@ -39,8 +39,6 @@ public:
 
     ostream& operator<<(ostream& os);
 
-    void operator=(ConcurrentHashMap &map);
-
     friend Test;
 
 private:
