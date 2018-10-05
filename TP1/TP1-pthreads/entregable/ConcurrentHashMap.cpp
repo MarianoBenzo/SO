@@ -22,17 +22,37 @@
 using namespace std;
 
 ConcurrentHashMap::ConcurrentHashMap() {
-    // Completar
-    for (auto &i : tabla) {
-        i = new Lista<pair<string, unsigned int>>();
+    for (int i = 0; i < 26; i++){
+        tabla[i] = new Lista<pair<string, unsigned int> >();
+        sem_init(&semaforo[i], 0, 1);
     }
+    lock = false;
+
+    max = make_pair("", 0);
 }
 
 ConcurrentHashMap::~ConcurrentHashMap() {
-    // for (int i = 0; i < 26; i++){
-    //     delete tabla[i];
-    //     sem_destroy(&semaforo[i]);
-    // }
+    for (int i = 0; i < 26; i++){
+        delete tabla[i];
+        sem_destroy(&semaforo[i]);
+    }
+}
+
+ConcurrentHashMap::ConcurrentHashMap(ConcurrentHashMap&& otro){
+    for (int i = 0; i < 26; i++){
+        tabla[i] = otro.tabla[i];
+        otro.tabla[i] = NULL;
+        sem_init(&semaforo[i], 0, 1);
+    }
+    max = otro.max;
+}
+
+void ConcurrentHashMap::operator=(ConcurrentHashMap &map){
+    list <string> keys = map.keys();
+    for (auto it = keys.begin(); it != keys.end(); it++)
+    {
+        addAndInc(*it);
+    }
 }
 
 void ConcurrentHashMap::addAndInc(string key) {
@@ -81,8 +101,67 @@ unsigned int ConcurrentHashMap::value(string key) {
     return value;
 }
 
+struct argsMaximum{
+    void *map;
+};
+
+// Función ejecutada por cada thread de maximum
+void *ConcurrentHashMap::searchMaximum(){
+    while(true){
+        int i = i_max.fetch_add(1); // Operación atómica, devuelve el valor que tenia antes
+
+        if (i >= 26) // No quedan más filas por procesar
+            return NULL;
+
+        pair<string, unsigned int> max_fila("", 0);
+        for (auto it = tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()){
+            auto t = it.Siguiente();
+            if (t.second > max_fila.second)
+                max_fila = t;
+        }
+        while(true){
+            while(lock.load());
+            if (!lock.exchange(true))
+                break;
+        }
+
+        if (max_fila.second > max.second || (max_fila.second == max.second && max_fila.first < max.first))
+            max = max_fila;
+
+        lock.store(false);
+    }
+}
+
+void *ConcurrentHashMap::maximumWrapper(void* context){
+    struct argsMaximum *args = (struct argsMaximum*) context;
+    ConcurrentHashMap* clase = (ConcurrentHashMap*) args->map;
+    return clase->searchMaximum();
+}
+
 pair<string, unsigned int> ConcurrentHashMap::maximum(unsigned int n) {
-    // Completar
+    for (int i = 0; i < 26; i++)
+        sem_wait(&semaforo[i]);
+
+    pthread_t thread[n];
+    unsigned int tid;
+    argsMaximum tids[n];
+    lock.store(false);
+    i_max = 0;
+
+    for (tid = 0; tid < n; ++tid) {
+        tids[tid].map = this;
+        pthread_create(&thread[tid], NULL, maximumWrapper, &tids[tid]);
+    }
+
+    for (tid = 0; tid < n; ++tid)
+        pthread_join(thread[tid], NULL);
+
+    pair<string, unsigned int> maximum = max;
+
+    for (int i = 0; i < 26; i++)
+        sem_post(&semaforo[i]);
+
+    return maximum;
 }
 
 int ConcurrentHashMap::hash_key(string key) {
@@ -242,7 +321,10 @@ maximumOne(unsigned int readingThreads, unsigned int maxingThreads, list <string
 
 static pair<string, unsigned int>
 maximumTwo(unsigned int readingThreads, unsigned int maxingThreads, list <string> filePaths) {
-    // Completar
+
+    ConcurrentHashMap map = countWordsArbitraryThreads(readingThreads, filePaths);
+
+    return map.maximum(maxingThreads);
 }
 
 

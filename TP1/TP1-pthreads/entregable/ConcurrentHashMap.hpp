@@ -10,7 +10,7 @@
 #include <string>
 #include <pthread.h>
 #include <map>
-#include <bits/semaphore.h>
+#include <semaphore.h>
 #include "ListaAtomica.hpp"
 #include "test.hpp"
 
@@ -20,6 +20,8 @@ class ConcurrentHashMap {
 public:
     ConcurrentHashMap();
     ~ConcurrentHashMap();
+    ConcurrentHashMap(ConcurrentHashMap&& otro);
+
 
     Lista<pair<string, unsigned int>>* tabla[26];
 
@@ -31,7 +33,13 @@ public:
 
     pair<string, unsigned int> maximum(unsigned int n);
 
+    void * searchMaximum();
+
+    static void *maximumWrapper(void* context);
+
     ostream& operator<<(ostream& os);
+
+    void operator=(ConcurrentHashMap &map);
 
     friend Test;
 
@@ -55,9 +63,5 @@ static ConcurrentHashMap countWordsArbitraryThreads(unsigned int n, list <string
 static pair<string, unsigned int> maximumOne(unsigned int readingThreads, unsigned int maxingThreads, list <string> filePaths);
 
 static pair<string, unsigned int> maximumTwo(unsigned int readingThreads, unsigned int maxingThreads, list <string> filePaths);
-
-struct args_struct{
-	void *c;
-};
 
 #endif
