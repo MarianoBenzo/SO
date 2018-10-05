@@ -26,9 +26,10 @@ ConcurrentHashMap::ConcurrentHashMap() {
         tabla[i] = new Lista<pair<string, unsigned int> >();
         sem_init(&semaforo[i], 0, 1);
     }
-    lock = false;
-
+    pthread_mutex_init(&lock_add, NULL);
+    sem_init(&lock_max, 0, 1);
     max = make_pair("", 0);
+    escritores = 0;
 }
 
 ConcurrentHashMap::~ConcurrentHashMap() {
@@ -48,6 +49,13 @@ ConcurrentHashMap::ConcurrentHashMap(ConcurrentHashMap&& otro){
 }
 
 void ConcurrentHashMap::addAndInc(string key) {
+    pthread_mutex_lock(&lock_add);
+    escritores++;
+
+    if(escritores == 1)
+        sem_wait(&lock_max);
+
+    pthread_mutex_unlock(&lock_add);
     int index = hash_key(key);
     // Obtengo acceso exclusivo de la lista a modificar
     sem_wait(&semaforo[index]);
@@ -63,6 +71,12 @@ void ConcurrentHashMap::addAndInc(string key) {
     }
 
     sem_post(&semaforo[index]);
+    pthread_mutex_lock(&lock_add);
+    escritores--;
+    if(escritores == 0)
+        sem_post(&lock_max);
+
+    pthread_mutex_unlock(&lock_add);
 }
 
 list <string> ConcurrentHashMap::keys() {
@@ -95,17 +109,16 @@ unsigned int ConcurrentHashMap::value(string key) {
 
 struct argsMaximum{
     void *map;
+    unsigned int t_id;
+    unsigned int n;
 };
 
 // Función ejecutada por cada thread de maximum
-void *ConcurrentHashMap::searchMaximum(){
-    while(true){
-        int i = i_max.fetch_add(1); // Operación atómica, devuelve el valor que tenia antes
-
-        if (i >= 26) // No quedan más filas por procesar
-            return NULL;
+void *ConcurrentHashMap::searchMaximum( unsigned int id , unsigned int n ){
+    for (unsigned int i = id; i < 26; i += n) {
 
         pair<string, unsigned int> max_fila("", 0);
+
         for (auto it = tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()){
             auto t = it.Siguiente();
             if (t.second > max_fila.second)
@@ -122,26 +135,27 @@ void *ConcurrentHashMap::searchMaximum(){
 
         lock.store(false);
     }
+    return NULL;
 }
 
 void *ConcurrentHashMap::maximumWrapper(void* context){
     struct argsMaximum *args = (struct argsMaximum*) context;
     ConcurrentHashMap* clase = (ConcurrentHashMap*) args->map;
-    return clase->searchMaximum();
+    return clase->searchMaximum(args->t_id, args->n);
 }
 
 pair<string, unsigned int> ConcurrentHashMap::maximum(unsigned int n) {
-    for (int i = 0; i < 26; i++)
-        sem_wait(&semaforo[i]);
+    sem_wait(&lock_max);
 
     pthread_t thread[n];
     unsigned int tid;
     argsMaximum tids[n];
     lock.store(false);
-    i_max = 0;
 
     for (tid = 0; tid < n; ++tid) {
         tids[tid].map = this;
+        tids[tid].t_id = tid;
+        tids[tid].n = n;
         pthread_create(&thread[tid], NULL, maximumWrapper, &tids[tid]);
     }
 
@@ -149,9 +163,7 @@ pair<string, unsigned int> ConcurrentHashMap::maximum(unsigned int n) {
         pthread_join(thread[tid], NULL);
 
     pair<string, unsigned int> maximum = max;
-
-    for (int i = 0; i < 26; i++)
-        sem_post(&semaforo[i]);
+    sem_post(&lock_max);
 
     return maximum;
 }
@@ -178,7 +190,7 @@ ostream &ConcurrentHashMap::operator<<(ostream &os) {
 struct argsCountWords {
     string path;
     list <string> *files;
-    atomic_int *index;
+    pthread_mutex_t* mutex;
     ConcurrentHashMap *map;
 };
 
@@ -236,19 +248,22 @@ void* countWordsArbitraryFromArguments(void * args){
     argsCountWords* acw = (argsCountWords*)args;
     ConcurrentHashMap* map = acw->map;
     list<string>* files = acw->files;
-    atomic_int* i_arch = acw->index;
+    pthread_mutex_t* mutex = acw->mutex;
 
     string file;
     while(true){
-        int i = atomic_fetch_add(i_arch, 1); // Atómico, devuelve valor anterior
+        pthread_mutex_lock(mutex);
 
-        if (i < files->size()){
-            auto it = files->begin();
-            advance(it, i);
-            file = *it;
+        if (!files->empty()){
+            file = files->front();
+            files->pop_front();
         }else{
-            return NULL; // Terminé
+            files->clear();
         }
+
+        pthread_mutex_unlock(mutex);
+        if(file.empty())
+            return NULL;
 
         countWordsInFileToConcurrentHashMap(file, map);
     }
@@ -258,13 +273,14 @@ static ConcurrentHashMap countWordsArbitraryThreads(unsigned int n, list <string
     ConcurrentHashMap map;
     pthread_t thread[n];
     argsCountWords args[n];
-    atomic_int index;
-    index.store(0);
+
+    pthread_mutex_t lock;
+    pthread_mutex_init(&lock, NULL);
 
     for(int i = 0; i < n; i++){
         args[i].files = &filePaths;
         args[i].map = &map;
-        args[i].index = &index;
+        args[i].mutex = &lock;
     }
 
     for(int i = 0; i < n; i++)
@@ -282,20 +298,19 @@ maximumOne(unsigned int readingThreads, unsigned int maxingThreads, list <string
     ConcurrentHashMap maps[readingThreads];
     pthread_t thread[readingThreads];
     argsCountWords args[readingThreads];
-    atomic_int index;
-    index.store(0);
+    pthread_mutex_t lock;
 
     for(int i = 0; i < readingThreads; i++){
         args[i].files = &filePaths;
         args[i].map = &maps[i];
-        args[i].index = &index;
+        args[i].mutex = &lock;
     }
 
-    for(int i = 0; i < readingThreads; i++)
+     for(int i = 0; i < readingThreads; i++)
         pthread_create(&thread[i], NULL, countWordsArbitraryFromArguments, (void*)&args[i]);
 
-    for(int i = 0; i < readingThreads; i++)
-        pthread_join(thread[i], NULL);
+     for(int i = 0; i < readingThreads; i++)
+         pthread_join(thread[i], NULL);
 
     ConcurrentHashMap map;
     for (int j = 0; j < readingThreads; j++){

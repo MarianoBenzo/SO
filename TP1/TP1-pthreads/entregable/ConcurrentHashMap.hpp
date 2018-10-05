@@ -33,9 +33,7 @@ public:
 
     pair<string, unsigned int> maximum(unsigned int n);
 
-    void * searchMaximum();
-
-    static void *maximumWrapper(void* context);
+    void * searchMaximum(unsigned int id, unsigned int nt);
 
     ostream& operator<<(ostream& os);
 
@@ -43,11 +41,12 @@ public:
 
 private:
     int hash_key(string key);
-
+    static void *maximumWrapper(void* context);
     sem_t semaforo[26];
+    sem_t lock_max;
     atomic_bool lock;
-    atomic_int i_max;
-
+    pthread_mutex_t lock_add;
+    int escritores;
     pair<string, unsigned int> max;
 };
 
