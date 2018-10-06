@@ -1,7 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <iostream>
-#include "ListaAtomica.cpp"
+#include "ListaAtomica.hpp"
 
 #define  CANT_THREADS  10
 #define  CANT_ELEM     100000
