@@ -6,7 +6,7 @@ using namespace std;
 
 int Test::run(int argc, char **argv) {
     ConcurrentHashMap h;
-    h = countWordsInFile("corpus");
+    h = countWordsInFile("texto.txt");
     for (int i = 0; i < 26; i++) {
         for (auto it = h.tabla[i]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
             auto t = it.Siguiente();

@@ -47,30 +47,52 @@ ConcurrentHashMap::ConcurrentHashMap(ConcurrentHashMap&& otro){
     max = otro.max;
 }
 
-void ConcurrentHashMap::operator=(ConcurrentHashMap &map){
-    list <string> keys = map.keys();
-    for (auto it = keys.begin(); it != keys.end(); it++)
-    {
-        addAndInc(*it);
+void ConcurrentHashMap::operator=(ConcurrentHashMap otro){
+    for (int i = 0; i < 26; i++){
+        tabla[i] = otro.tabla[i];
+        otro.tabla[i] = NULL;
+        sem_init(&semaforo[i], 0, 1);
     }
+    max = otro.max;
 }
 
-void ConcurrentHashMap::addAndInc(string key) {
-    int index = hash_key(key);
-    // Obtengo acceso exclusivo de la lista a modificar
-    sem_wait(&semaforo[index]);
+// void ConcurrentHashMap::addAndInc(string key) {
+//     int index = hash_key(key);
+//     // Obtengo acceso exclusivo de la lista a modificar
+//     sem_wait(&semaforo[index]);
 
-    if (value(key) == 0) {
-        pair<string, unsigned int> p(key, 1);
-        tabla[index]->push_front(p);
-    } else {
-        for (auto it = tabla[index]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
-            auto &t = it.Siguiente();
+//     if (value(key) == 0) {
+//         pair<string, unsigned int> p(key, 1);
+//         tabla[index]->push_front(p);
+//     } else {
+//         for (auto it = tabla[index]->CrearIt(); it.HaySiguiente(); it.Avanzar()) {
+//             auto &t = it.Siguiente();
+//             t.second++;
+//         }
+//     }
+
+//     sem_post(&semaforo[index]);
+// }
+
+void ConcurrentHashMap::addAndInc(string key) {
+    int k = hash_key(key);
+    // Obtengo acceso exclusivo de la lista a modificar
+    sem_wait(&semaforo[k]);
+
+    bool no_esta = true;
+    for (auto it = tabla[k]->CrearIt(); it.HaySiguiente(); it.Avanzar()){
+        auto& t = it.Siguiente();
+        if (t.first == key){
             t.second++;
+            no_esta = false;
         }
     }
+    if (no_esta){
+        pair<string, unsigned int> palabra(key, 1);
+        tabla[k]->push_front(palabra);
+    }
 
-    sem_post(&semaforo[index]);
+    sem_post(&semaforo[k]);
 }
 
 list <string> ConcurrentHashMap::keys() {

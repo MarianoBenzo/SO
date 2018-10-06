@@ -8,7 +8,7 @@ using namespace std;
 
 int Test::run(int argc, char **argv) {
     pair<string, unsigned int> p;
-    list <string> l = {"corpus-0", "corpus-1", "corpus-2", "corpus-3", "corpus-4"};
+    list <string> l = {"texto.txt", "texto-2.txt", "texto-3.txt"};
 
     if (argc != 3) {
         cerr << "uso: " << argv[0] << " #tarchivos #tmaximum" << endl;

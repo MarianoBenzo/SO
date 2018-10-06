@@ -21,6 +21,7 @@ public:
     ConcurrentHashMap();
     ~ConcurrentHashMap();
     ConcurrentHashMap(ConcurrentHashMap&& otro);
+    void operator=(ConcurrentHashMap map);
 
 
     Lista<pair<string, unsigned int>>* tabla[26];
@@ -38,8 +39,6 @@ public:
     static void *maximumWrapper(void* context);
 
     ostream& operator<<(ostream& os);
-
-    void operator=(ConcurrentHashMap &map);
 
     friend Test;
 
