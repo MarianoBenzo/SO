@@ -32,6 +32,8 @@ public:
 
     unsigned int value(string key);
 
+    atomic_int cantWords;
+
     pair<string, unsigned int> maximum(unsigned int n);
 
     void * searchMaximum();
