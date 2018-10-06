@@ -8,7 +8,7 @@ using namespace std;
 
 int Test::run(int argc, char **argv) {
     ConcurrentHashMap h;
-    list <string> l = {"texto.txt", "texto-2.txt", "texto-3.txt"};
+    list <string> l = {"corpus-0", "corpus-1", "corpus-2"};
     int i;
 
     if (argc != 2) {
