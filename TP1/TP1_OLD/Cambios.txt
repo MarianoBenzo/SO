@@ -1,8 +1,0 @@
-* addAndInc: se quitó el semáforo lock_add, lock_max y la variable escritores, debido a que podían causar inanición del método maximum si llegaban escritores constantemente (ya que nunca se ejecutaría signal() sobre lock_max).
-
-* maximum: ahora realiza wait() y signal() sobre todos los semáforos de la tabla antes y después de ejecutar, respectivamente.
-Esto soluciona el problema de inanición porque los semáforos se implementan con una cola, entonces por más que constantemente lleguen nuevos threads ejecutando addAndInc, los mismos estarán al final de la cola. Por lo tanto, cuando los primeros en llegar realicen signal(), despertarán a maximum antes de despertar a los que llegaron después.
-
-* buscar_maximo: en lugar de distribuir las filas según el id del thread, se utiliza un índice atómico.
-
-* count_words_4: ya no se quitan elementos de la lista; en lugar de eso, se incrementa un índice atómico que reciben por parámetro.
